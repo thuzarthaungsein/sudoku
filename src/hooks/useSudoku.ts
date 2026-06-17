@@ -30,14 +30,15 @@ function cloneCellBoard(board: Board): Board {
 }
 
 export function useSudoku() {
-  const [board, setBoard] = useState<Board>(() => {
-    const { puzzle } = generatePuzzle('easy');
-    return convertToBoard(puzzle);
-  });
-  const [solution, setSolution] = useState<number[][]>(() => {
-    const { solution } = generatePuzzle('easy');
-    return solution;
-  });
+  // Initialize with empty board to avoid SSR hydration mismatch
+  const [board, setBoard] = useState<Board>(() =>
+    Array(9).fill(null).map(() =>
+      Array(9).fill(null).map(() => createCellFromNumber(0, false))
+    )
+  );
+  const [solution, setSolution] = useState<number[][]>(() =>
+    Array(9).fill(null).map(() => Array(9).fill(0))
+  );
   const [selectedCell, setSelectedCell] = useState<{ row: number; col: number } | null>(null);
   const [difficulty, setDifficulty] = useState<Difficulty>('easy');
   const [mistakes, setMistakes] = useState(0);
@@ -47,6 +48,17 @@ export function useSudoku() {
   const [isPencilMode, setIsPencilMode] = useState(false);
   const [previousBoard, setPreviousBoard] = useState<Board | null>(null);
   const [score, setScore] = useState(0);
+  const [isInitialized, setIsInitialized] = useState(false);
+
+  // Generate initial puzzle on client side only
+  useEffect(() => {
+    if (!isInitialized) {
+      const { puzzle, solution: newSolution } = generatePuzzle('easy');
+      setBoard(convertToBoard(puzzle));
+      setSolution(newSolution);
+      setIsInitialized(true);
+    }
+  }, [isInitialized]);
 
   // Timer logic
   useEffect(() => {
